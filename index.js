@@ -1,6 +1,7 @@
 import * as dotenv from 'dotenv'
 dotenv.config()
 
+import asyncHandler from "express-async-handler";
 import mongoose from "mongoose";
 import express from "express";
 import cors from "cors";
@@ -11,44 +12,115 @@ import userSchema from './schemas/User.schema.js';
 import tokenSchema from './schemas/Token.schema.js';
 import alertSchema from './schemas/Alert.schema.js';
 
-var User = primaria.model('User',userSchema);
-var Token = primaria.model('Token', tokenSchema);
-var Alert = primaria.model('Alert', alertSchema);    
+var UserPrimaria = primaria.model('User',userSchema);
+var TokenPrimaria = primaria.model('Token', tokenSchema);
+var AlertPrimaria = primaria.model('Alert', alertSchema);    
+var UserSecundaria = secundaria.model('User',userSchema);
+var TokenSecundaria = secundaria.model('Token', tokenSchema);
+var AlertSecundaria = secundaria.model('Alert', alertSchema);    
+
+
+
+var User = UserPrimaria;
+var Token = TokenPrimaria;
+var Alert = AlertPrimaria;    
 
 var primariaReady = true;
 var secundariaReady = true;
 
-primaria.on('connected',function(){
+primaria.on('connected',asyncHandler(async function(){
   console.log('use primaria');
-  User = primaria.model('User',userSchema);
-  Token = primaria.model('Token', tokenSchema);
-  Alert = primaria.model('Alert', alertSchema);    
-
+  if(secundariaReady){
+    Promise.all([UserPrimaria.deleteMany({}),TokenPrimaria.deleteMany({}),AlertPrimaria.deleteMany({})])
+    Promise.all([copyUsersModelAtoModelB(UserSecundaria,UserPrimaria),copyTokensModelAtoModelB(TokenSecundaria,TokenPrimaria),copyAlertsModelAtoModelB(TokenSecundaria,TokenPrimaria)])
+    console.log("copy secundaria to primaria");
+  }
+  User = UserPrimaria;
+  Token = TokenPrimaria;
+  Alert = AlertPrimaria;    
   primariaReady = true;
-});
+}))
 primaria.on('disconnected',function(){
   if(!secundariaReady){
     throw new Error('Any Database connected');
   }else{
     console.log('use secundaria');
-    User = secundaria.model('User',userSchema);
-    Token = secundaria.model('Token', tokenSchema);
-    Alert = secundaria.model('Alert', alertSchema);        
+    User = UserSecundaria;
+    Token = TokenSecundaria;
+    Alert = AlertSecundaria;        
   }
   primariaReady = false;
 });
 secundaria.on('connected', function(){secundariaReady = true;});
 secundaria.on('disconnected', function(){secundariaReady = false;if(!primariaReady){throw new Error('Any Database connected');}});
 
+const datesAreOnSameDay = (first, second) => {
+  return (first.getFullYear()===second.getFullYear()
+  && first.getMonth()===second.getMonth()
+  && first.getDate()===second.getDate()
+  );
+}
+const copyUsersModelAtoModelB = async(ModelA,ModelB) =>{
+  const users = await ModelA.find({});
+  Promise.all(users.map(async (user)=>{
+    const userB = new ModelB({
+      username: user.username,
+      name: user.name,
+      address: user.address,
+      password: user.password,
+    });
+    await userB.save();
+  }));
+}
+const copyTokensModelAtoModelB = async(ModelA,ModelB) =>{
+  const tokens = await ModelA.find({});
+  Promise.all(tokens.map(async (token)=>{
+    const tokenB = new ModelB({
+      token: token.token
+    });
+    await tokenB.save();
+  }));
+}
+const copyAlertsModelAtoModelB = async(ModelA,ModelB) =>{
+  const alerts = await ModelA.find({});
+  Promise.all(alerts.map(async (alert)=>{
+    const alertB = new ModelB({
+      sender: alert.sender,
+      createdAt: alert.createdAt,
+      updatedAt: alert.updatedAt
+    });
+    await alertB.save();
+  }));
+}
+
+var currentDay = new Date();
+currentDay.setDate(currentDay.getDate()-1);
 
 const app = express();
 mongoose.set('strictQuery',false);
+
+//O.K
+app.use(asyncHandler(async function(req, res, next){
+  console.log(currentDay);
+  if(!datesAreOnSameDay(currentDay,new Date())){
+    if(primariaReady && secundariaReady){
+
+    Promise.all([UserSecundaria.deleteMany({}),TokenSecundaria.deleteMany({}),AlertSecundaria.deleteMany({})])
+    Promise.all([copyUsersModelAtoModelB(UserPrimaria,UserSecundaria),copyTokensModelAtoModelB(TokenPrimaria,TokenSecundaria)],copyAlertsModelAtoModelB(AlertPrimaria,AlertSecundaria));
+    console.log('copy primaria to secundaria');
+
+
+    }
+    currentDay= new Date();
+  }
+  next();
+}));
+
 app.use(cors());
-
 app.use(morgan('tiny'));
-
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
+
 
 //O.K
 app.get('/users/', async function(req,res){
