@@ -6,7 +6,7 @@ import mongoose from "mongoose";
 import express from "express";
 import cors from "cors";
 
-import morgan from "morgan";
+// import morgan from "morgan";
 import { primaria,secundaria } from './connections.js';
 import userSchema from './schemas/User.schema.js';
 import tokenSchema from './schemas/Token.schema.js';
@@ -117,7 +117,7 @@ app.use(asyncHandler(async function(req, res, next){
 }));
 
 app.use(cors());
-app.use(morgan('tiny'));
+// app.use(morgan('tiny'));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
@@ -127,6 +127,14 @@ app.get('/users/', async function(req,res){
   const users = await User.find({});
   res.json(users);
 });
+
+
+app.post('/users/one/byUsername', async function(req,res){
+  const username = req.body.username;
+  const user = await User.findOne({username: username});
+  res.json(user);
+});
+
 //O.K
 app.post('/users/one/', async function(req,res){
   const id = new mongoose.Types.ObjectId(req.body.id);
@@ -146,7 +154,7 @@ app.post('/users/save', async function(req,res){
   const {username, name, address, password} = req.body;
   const user = await User({username, name, address, password});
   user.save();
-  res.json({user});
+  res.json(user);
 });
 //O.K
 app.get('/alerts/', async function(req,res){
