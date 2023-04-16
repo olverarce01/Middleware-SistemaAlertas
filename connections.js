@@ -10,7 +10,9 @@ try{
 }catch(err){console.log(err);}
 try{
   //localhost
-  secundaria = await mongoose.createConnection("mongodb://localhost:27017/alertaDB",{useNewUrlParser:true}).asPromise();
+  //secundaria = await mongoose.createConnection("mongodb://localhost:27017/alertaDB",{useNewUrlParser:true}).asPromise();
+  secundaria = await mongoose.createConnection(process.env.MONGODB2,{useNewUrlParser:true}).asPromise();
+
 }catch(err){console.log(err);}
 
 
