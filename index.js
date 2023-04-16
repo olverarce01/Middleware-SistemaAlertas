@@ -101,8 +101,8 @@ mongoose.set('strictQuery',false);
 
 //O.K
 app.use(asyncHandler(async function(req, res, next){
-  console.log(currentDay);
   if(!datesAreOnSameDay(currentDay,new Date())){
+    console.log(currentDay, new Date());
     if(primariaReady && secundariaReady){
 
     Promise.all([UserSecundaria.deleteMany({}),TokenSecundaria.deleteMany({}),AlertSecundaria.deleteMany({})])
