@@ -10,6 +10,7 @@ import mongoose from "mongoose";
 import express from "express";
 import cors from "cors";
 
+
 // import morgan from "morgan";
 import { primaria,secundaria } from './connections.js';
 import userSchema from './schemas/User.schema.js';
@@ -278,7 +279,8 @@ app.get('/alerts/', async function(req,res){
 app.post('/alerts/save', async function(req,res){
   const {senderId} = req.body;
   const alert = new Alert({
-    sender: new mongoose.Types.ObjectId(senderId)
+    sender: new mongoose.Types.ObjectId(senderId),
+    createdAt: new Date()
   });
   await alert.save();
   res.json(alert);
