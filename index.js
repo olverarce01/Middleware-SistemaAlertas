@@ -280,7 +280,7 @@ app.post('/alerts/save', async function(req,res){
   const {senderId} = req.body;
   const alert = new Alert({
     sender: new mongoose.Types.ObjectId(senderId),
-    createdAt: new Date()
+    date: new Date()
   });
   await alert.save();
   res.json(alert);
