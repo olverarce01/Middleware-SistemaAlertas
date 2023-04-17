@@ -6,7 +6,7 @@ import * as dotenv from 'dotenv'
 dotenv.config()
 
 import asyncHandler from "express-async-handler";
-import mongoose, { Aggregate } from "mongoose";
+import mongoose from "mongoose";
 import express from "express";
 import cors from "cors";
 
