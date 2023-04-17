@@ -1,3 +1,7 @@
+import swaggerJsdoc from 'swagger-jsdoc';
+import swaggerUi from 'swagger-ui-express';
+
+
 import * as dotenv from 'dotenv'
 dotenv.config()
 
@@ -12,14 +16,26 @@ import userSchema from './schemas/User.schema.js';
 import tokenSchema from './schemas/Token.schema.js';
 import alertSchema from './schemas/Alert.schema.js';
 
+const options = {
+  definition: {
+    info: {
+      title: "Middleware Sistema de alertas",
+      version: "0.1.0",
+      description:
+        "Este es el middleware para las bases de datos",
+    }
+  },
+  apis: ["./*.js"],
+};
+
+
+
 var UserPrimaria = primaria.model('User',userSchema);
 var TokenPrimaria = primaria.model('Token', tokenSchema);
 var AlertPrimaria = primaria.model('Alert', alertSchema);    
 var UserSecundaria = secundaria.model('User',userSchema);
 var TokenSecundaria = secundaria.model('Token', tokenSchema);
 var AlertSecundaria = secundaria.model('Alert', alertSchema);    
-
-
 
 var User = UserPrimaria;
 var Token = TokenPrimaria;
@@ -99,6 +115,13 @@ currentDay.setDate(currentDay.getDate()-1);
 const app = express();
 mongoose.set('strictQuery',false);
 
+const specs = swaggerJsdoc(options);
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(specs)
+);
+
 //O.K
 app.use(asyncHandler(async function(req, res, next){
   if(!datesAreOnSameDay(currentDay,new Date())){
@@ -122,26 +145,65 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 
-//O.K
+/** 
+ * @swagger
+ * /users/:
+ *  get:
+ *    tags:
+ *      - Usuarios
+ *    summary: Obtiene datos de un usuario
+ *    description: Obtiene (_id, username, name, address, password)
+*/
 app.get('/users/', async function(req,res){
   const users = await User.find({});
   res.json(users);
 });
-
-
+/** 
+ * @swagger
+ * /users/one/byUsername:
+ *    post:
+ *      tags:
+ *      - Usuarios
+ *      summary: Obtiene datos de un usuario por username
+ *      description: Necesita username. Obtiene (_id, username, name, address, password)
+ *      parameters:
+ *      - in: body
+ *      name: username
+*/
 app.post('/users/one/byUsername', async function(req,res){
   const username = req.body.username;
   const user = await User.findOne({username: username});
   res.json(user);
 });
-
-//O.K
+/** 
+ * @swagger
+ *  /users/one:
+ *    post:
+ *      tags:
+ *      - Usuarios
+ *      summary: Obtiene datos de un usuario por id con findOne()
+ *      description: Necesita id. Obtiene (_id, username, name, address, password)
+ *      parameters:
+ *      - in: body
+ *      name: id
+*/
 app.post('/users/one/', async function(req,res){
   const id = new mongoose.Types.ObjectId(req.body.id);
   const user = await User.findOne({_id: id});
   res.json(user);
 });
-//O.K
+/** 
+ * @swagger
+ *  /users/byId:
+ *    post:
+ *      tags:
+ *      - Usuarios
+ *      summary: Obtiene datos de un usuario por id con findById()
+ *      description: Necesita id. Obtiene (_id, username, name, address)
+ *      parameters:
+ *      - in: body
+ *      name: id
+*/
 app.post('/users/byId/', async function(req,res){
   const id = req.body.id;
   const user = await User.findById(id).select('-password');
@@ -149,20 +211,58 @@ app.post('/users/byId/', async function(req,res){
 });
 
 
-//O.K
+/** 
+ * @swagger
+ *  /users/save:
+ *  post:
+ *    tags:
+ *    - Usuarios
+ *    summary: Guarda un Usuario
+ *    description: Guarda Usuario con (username, name, address, password), retorna el Usuario creado.
+ *    parameters:
+ *      - in: body
+ *        name: username
+ *      - in: body
+ *        name: name
+ *      - in: body
+ *        name: address
+ *      - in: body
+ *        name: password
+*/
 app.post('/users/save', async function(req,res){
   const {username, name, address, password} = req.body;
   const user = await User({username, name, address, password});
   user.save();
   res.json(user);
 });
-//O.K
+
+
+/** 
+ * @swagger
+ *  /alerts/:
+ *  get:
+ *    tags:
+ *    - Alertas
+ *    summary: Obtiene todas las alertas
+ *    description: Obtiene todas las alerta, cada una con (sender,createdAt, updatedAt)
+*/
 app.get('/alerts/', async function(req,res){
   const alerts = await Alert.find({});
   res.json(alerts);
 });
 
-//O.K
+/** 
+ * @swagger
+ *  /alerts/save:
+ *  post:
+ *    tags:
+ *    - Alertas
+ *    summary: Guarda una alerta
+ *    description: Guarda una alerta con el senderId. Retorna la alerta guardada
+ *    parameters:
+ *    - in: body
+ *    name: senderId
+*/
 app.post('/alerts/save', async function(req,res){
   const {senderId} = req.body;
   const alert = new Alert({
@@ -172,19 +272,51 @@ app.post('/alerts/save', async function(req,res){
   res.json(alert);
 });
 
-//O.K
+/** 
+ * @swagger
+ *  /tokens/:
+ *  get:
+ *    tags:
+ *    - Tokens
+ *    summary: Obtener todos los tokens Firebase
+ *    description: Obtiene todos los tokens de usuarios suscritos a notificaciones
+*/
+
 app.get('/tokens/', async function(req,res){
   const tokens = await Token.find({});
   res.json(tokens);
 });
 
-//O.K
+
+/** 
+ * @swagger
+ *  /tokens/one/:token:
+ *  get:
+ *    tags:
+ *    - Tokens
+ *    summary: Obtiene un token segun un token
+ *    description: Obtiene un token pasando token
+ *    parameters:
+ *    - in: path
+ *    name: token
+*/
 app.get('/tokens/one/:token', async function(req,res){
   const token = await Token.findOne({token: req.params.token});
   res.json(token);  
 });
 
-//O.K
+/** 
+ * @swagger
+ *  /tokens/save:
+ *  post:
+ *    tags:
+ *    - Tokens
+ *    summary: Guarda un token de Firebase
+ *    description: Guarda una token. necesita un token. Retorna el token creado
+ *    parameters:
+ *    - in: path
+ *    name: token
+*/
 app.post('/tokens/save', async function(req,res){
   const token = req.body.token;
   const myToken = new Token({token});
