@@ -6,7 +6,7 @@ import * as dotenv from 'dotenv'
 dotenv.config()
 
 import asyncHandler from "express-async-handler";
-import mongoose from "mongoose";
+import mongoose, { Aggregate } from "mongoose";
 import express from "express";
 import cors from "cors";
 
@@ -247,8 +247,20 @@ app.post('/users/save', async function(req,res){
  *    description: Obtiene todas las alerta, cada una con (sender,createdAt, updatedAt)
 */
 app.get('/alerts/', async function(req,res){
-  const alerts = await Alert.find({});
-  res.json(alerts);
+  const alertsAndSender = await Alert.aggregate([
+    {
+      $lookup: 
+      {
+        from: "users",
+        localField: "sender",
+        foreignField: "_id",
+        as: "alertAndSender"
+      }
+    },
+    {$unwind: "$alertAndSender"}
+
+  ])
+  res.json(alertsAndSender);
 });
 
 /** 
