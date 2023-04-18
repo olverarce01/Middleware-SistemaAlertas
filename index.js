@@ -163,7 +163,7 @@ app.use(express.json());
  *    description: Obtiene (_id, username, name, address, password)
 */
 app.get('/users/', async function(req,res){
-  const users = await User.find({});
+  const users = await User.find({}).select('-password');
   res.json(users);
 });
 /** 
@@ -180,7 +180,7 @@ app.get('/users/', async function(req,res){
 */
 app.post('/users/one/byUsername', async function(req,res){
   const username = req.body.username;
-  const user = await User.findOne({username: username});
+  const user = await User.findOne({username: username}).select('-password');
   res.json(user);
 });
 /** 
@@ -197,7 +197,7 @@ app.post('/users/one/byUsername', async function(req,res){
 */
 app.post('/users/one/', async function(req,res){
   const id = new mongoose.Types.ObjectId(req.body.id);
-  const user = await User.findOne({_id: id});
+  const user = await User.findOne({_id: id}).select('-password');
   res.json(user);
 });
 /** 
@@ -255,7 +255,7 @@ app.post('/users/save', async function(req,res){
  *    description: Obtiene todas las alerta, cada una con (sender,createdAt, updatedAt)
 */
 app.get('/alerts/', async function(req,res){
-  const alertsAndSender = await Alert.aggregate([
+  const alerts = await Alert.aggregate([
     {
       $lookup: 
       {
@@ -268,7 +268,16 @@ app.get('/alerts/', async function(req,res){
     {$unwind: "$alertAndSender"}
 
   ])
-  res.json(alertsAndSender);
+  const alertsModificated = alerts.map(alert=>{
+    return {
+      _id: alert._id,
+      name: alert.alertAndSender,
+      address: alert.alertAndSender,
+      date: alert.date
+    }
+  });
+  res.json(alertsModificated);
+  
 });
 
 /** 
