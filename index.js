@@ -47,12 +47,12 @@ var primariaReady = true;
 var secundariaReady = true;
 
 primaria.on('connected',asyncHandler(async function(){
-  console.log('use primaria');
   if(secundariaReady){
     Promise.all([UserPrimaria.deleteMany({}),TokenPrimaria.deleteMany({}),AlertPrimaria.deleteMany({})])
     Promise.all([copyUsersModelAtoModelB(UserSecundaria,UserPrimaria),copyTokensModelAtoModelB(TokenSecundaria,TokenPrimaria),copyAlertsModelAtoModelB(TokenSecundaria,TokenPrimaria)])
-    console.log("copy secundaria to primaria");
+    console.log("copy secundaria to primaria",new Date());
   }
+  console.log('use primaria',new Date());
   User = UserPrimaria;
   Token = TokenPrimaria;
   Alert = AlertPrimaria;    
@@ -60,9 +60,9 @@ primaria.on('connected',asyncHandler(async function(){
 }))
 primaria.on('disconnected',function(){
   if(!secundariaReady){
-    throw new Error('Any Database connected');
+    throw new Error('Any Database connected',new Date());
   }else{
-    console.log('use secundaria');
+    console.log('use secundaria',new Date());
     User = UserSecundaria;
     Token = TokenSecundaria;
     Alert = AlertSecundaria;        
@@ -70,7 +70,7 @@ primaria.on('disconnected',function(){
   primariaReady = false;
 });
 secundaria.on('connected', function(){secundariaReady = true;});
-secundaria.on('disconnected', function(){secundariaReady = false;if(!primariaReady){throw new Error('Any Database connected');}});
+secundaria.on('disconnected', function(){secundariaReady = false;if(!primariaReady){throw new Error('Any Database connected',new Date());}});
 
 const datesAreOnSameDay = (first, second) => {
   return (first.getFullYear()===second.getFullYear()
@@ -126,7 +126,7 @@ cron.schedule('00 12 * * *',()=>{
   if(primariaReady && secundariaReady){
     Promise.all([UserSecundaria.deleteMany({}),TokenSecundaria.deleteMany({}),AlertSecundaria.deleteMany({})])
     Promise.all([copyUsersModelAtoModelB(UserPrimaria,UserSecundaria),copyTokensModelAtoModelB(TokenPrimaria,TokenSecundaria)],copyAlertsModelAtoModelB(AlertPrimaria,AlertSecundaria));
-    console.log('copy primaria to secundaria');
+    console.log('copy primaria to secundaria', new Date());
     }
 })
 
