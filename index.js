@@ -10,6 +10,7 @@ import mongoose from "mongoose";
 import express from "express";
 import cors from "cors";
 
+import cron from 'node-cron';
 
 // import morgan from "morgan";
 import { primaria,secundaria } from './connections.js';
@@ -110,8 +111,6 @@ const copyAlertsModelAtoModelB = async(ModelA,ModelB) =>{
   }));
 }
 
-var currentDay = new Date();
-currentDay.setDate(currentDay.getDate()-1);
 
 const app = express();
 mongoose.set('strictQuery',false);
@@ -123,22 +122,30 @@ app.use(
   swaggerUi.setup(specs)
 );
 
-//O.K
-app.use(asyncHandler(async function(req, res, next){
-  if(!datesAreOnSameDay(currentDay,new Date())){
-    console.log(currentDay, new Date());
-    if(primariaReady && secundariaReady){
-
+cron.schedule('00 12 * * *',()=>{
+  if(primariaReady && secundariaReady){
     Promise.all([UserSecundaria.deleteMany({}),TokenSecundaria.deleteMany({}),AlertSecundaria.deleteMany({})])
     Promise.all([copyUsersModelAtoModelB(UserPrimaria,UserSecundaria),copyTokensModelAtoModelB(TokenPrimaria,TokenSecundaria)],copyAlertsModelAtoModelB(AlertPrimaria,AlertSecundaria));
     console.log('copy primaria to secundaria');
-
-
     }
-    currentDay= new Date();
-  }
-  next();
-}));
+})
+
+//O.K
+// app.use(asyncHandler(async function(req, res, next){
+//   if(!datesAreOnSameDay(currentDay,new Date())){
+//     console.log(currentDay, new Date());
+//     if(primariaReady && secundariaReady){
+
+//     Promise.all([UserSecundaria.deleteMany({}),TokenSecundaria.deleteMany({}),AlertSecundaria.deleteMany({})])
+//     Promise.all([copyUsersModelAtoModelB(UserPrimaria,UserSecundaria),copyTokensModelAtoModelB(TokenPrimaria,TokenSecundaria)],copyAlertsModelAtoModelB(AlertPrimaria,AlertSecundaria));
+//     console.log('copy primaria to secundaria');
+
+
+//     }
+//     currentDay= new Date();
+//   }
+//   next();
+// }));
 
 app.use(cors());
 // app.use(morgan('tiny'));
