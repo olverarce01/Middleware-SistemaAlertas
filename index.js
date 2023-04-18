@@ -271,8 +271,8 @@ app.get('/alerts/', async function(req,res){
   const alertsModificated = alerts.map(alert=>{
     return {
       _id: alert._id,
-      name: alert.alertAndSender,
-      address: alert.alertAndSender,
+      name: alert.alertAndSender.name,
+      address: alert.alertAndSender.address,
       date: alert.date
     }
   });
