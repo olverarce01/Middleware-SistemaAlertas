@@ -46,13 +46,24 @@ var Alert = AlertPrimaria;
 var primariaReady = true;
 var secundariaReady = true;
 
+function getDateChile(){
+  const d = new Date();
+  const localTime = d.getTime();
+  const localOffset = d.getTimezoneOffset()*60000;
+  const utc = localTime + localOffset;
+  const offset = -4;
+  const chile = utc + (3600000 * offset);
+  const dateChile = new Date(chile)
+  return dateChile;
+}
+
 primaria.on('connected',asyncHandler(async function(){
   if(secundariaReady){
     Promise.all([UserPrimaria.deleteMany({}),TokenPrimaria.deleteMany({}),AlertPrimaria.deleteMany({})])
     Promise.all([copyUsersModelAtoModelB(UserSecundaria,UserPrimaria),copyTokensModelAtoModelB(TokenSecundaria,TokenPrimaria),copyAlertsModelAtoModelB(TokenSecundaria,TokenPrimaria)])
-    console.log("copy secundaria to primaria",new Date());
+    console.log("copy secundaria to primaria",getDateChile());
   }
-  console.log('use primaria',new Date());
+  console.log('use primaria',getDateChile());
   User = UserPrimaria;
   Token = TokenPrimaria;
   Alert = AlertPrimaria;    
@@ -60,9 +71,9 @@ primaria.on('connected',asyncHandler(async function(){
 }))
 primaria.on('disconnected',function(){
   if(!secundariaReady){
-    throw new Error('Any Database connected',new Date());
+    throw new Error('Any Database connected',getDateChile());
   }else{
-    console.log('use secundaria',new Date());
+    console.log('use secundaria',getDateChile());
     User = UserSecundaria;
     Token = TokenSecundaria;
     Alert = AlertSecundaria;        
@@ -70,7 +81,7 @@ primaria.on('disconnected',function(){
   primariaReady = false;
 });
 secundaria.on('connected', function(){secundariaReady = true;});
-secundaria.on('disconnected', function(){secundariaReady = false;if(!primariaReady){throw new Error('Any Database connected',new Date());}});
+secundaria.on('disconnected', function(){secundariaReady = false;if(!primariaReady){throw new Error('Any Database connected',getDateChile());}});
 
 const datesAreOnSameDay = (first, second) => {
   return (first.getFullYear()===second.getFullYear()
@@ -122,11 +133,11 @@ app.use(
   swaggerUi.setup(specs)
 );
 
-cron.schedule('00 12 * * *',()=>{
+cron.schedule('30 10 * * *',()=>{
   if(primariaReady && secundariaReady){
     Promise.all([UserSecundaria.deleteMany({}),TokenSecundaria.deleteMany({}),AlertSecundaria.deleteMany({})])
     Promise.all([copyUsersModelAtoModelB(UserPrimaria,UserSecundaria),copyTokensModelAtoModelB(TokenPrimaria,TokenSecundaria)],copyAlertsModelAtoModelB(AlertPrimaria,AlertSecundaria));
-    console.log('copy primaria to secundaria', new Date());
+    console.log('copy primaria to secundaria', getDateChile());
     }
 })
 
@@ -296,7 +307,7 @@ app.post('/alerts/save', async function(req,res){
   const {senderId} = req.body;
   const alert = new Alert({
     sender: new mongoose.Types.ObjectId(senderId),
-    date: new Date()
+    date: getDateChile()
   });
   await alert.save();
   res.json(alert);
