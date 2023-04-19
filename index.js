@@ -133,13 +133,18 @@ app.use(
   swaggerUi.setup(specs)
 );
 
-cron.schedule('30 10 * * *',()=>{
+cron.schedule('47 10 * * *',()=>{
   if(primariaReady && secundariaReady){
     Promise.all([UserSecundaria.deleteMany({}),TokenSecundaria.deleteMany({}),AlertSecundaria.deleteMany({})])
     Promise.all([copyUsersModelAtoModelB(UserPrimaria,UserSecundaria),copyTokensModelAtoModelB(TokenPrimaria,TokenSecundaria)],copyAlertsModelAtoModelB(AlertPrimaria,AlertSecundaria));
     console.log('copy primaria to secundaria', getDateChile());
     }
-})
+},{
+  scheduled: true,
+  timezone: "America/Santiago"
+}
+
+)
 
 //O.K
 // app.use(asyncHandler(async function(req, res, next){
