@@ -196,7 +196,7 @@ app.get('/users/', async function(req,res){
 */
 app.post('/users/one/byUsername', async function(req,res){
   const username = req.body.username;
-  const user = await User.findOne({username: username}).select('-password');
+  const user = await User.findOne({username: username});
   res.json(user);
 });
 /** 
