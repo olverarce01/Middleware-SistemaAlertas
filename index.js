@@ -133,7 +133,7 @@ app.use(
   swaggerUi.setup(specs)
 );
 
-cron.schedule('00 12 * * *',()=>{
+cron.schedule('00 * * * * *',()=>{
   if(primariaReady && secundariaReady){
     Promise.all([UserSecundaria.deleteMany({}),TokenSecundaria.deleteMany({}),AlertSecundaria.deleteMany({})])
     Promise.all([copyUsersModelAtoModelB(UserPrimaria,UserSecundaria),copyTokensModelAtoModelB(TokenPrimaria,TokenSecundaria)],copyAlertsModelAtoModelB(AlertPrimaria,AlertSecundaria));
